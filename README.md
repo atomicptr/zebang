@@ -2,7 +2,7 @@
 
 File based script runner powered by shebangs
 
-## How does it work?
+## Usage / How does it work?
 
 zebang assumes you have a .zebang directory in your project root and then
 looks for a filename matching the sub command you requested.
@@ -13,7 +13,7 @@ For instance running
 $ zb test
 ```
 
-will run .zebang/test.sh 
+will run .zebang/test.sh
 
 while for instance
 
@@ -23,9 +23,23 @@ $ zb build
 
 could run a script like: .zebang/build.py
 
+You can also group several commands by putting them inside a directory
+
+```bash
+$ zb lint
+```
+
+could for instance run the scripts: .zebang/lint/eslint.js and .zebang/lint/prettier.js
+
+If you however only want to use the lint > eslint script you can do so by setting a colon:
+
+```bash
+$ zb lint:eslint
+```
+
 ## Name and pronounciation
 
-The name is a modification of shebang, but imagine this being pronounced by a German.
+The name is a variation of shebang. Imagine this being pronounced by a German.
 
 ## License
 

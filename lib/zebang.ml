@@ -9,7 +9,7 @@ let is_runnable script_path =
   if Filesystem.is_executable script_path then true
   else match Shebang.parse script_path with Ok _ -> true | Error _ -> false
 
-type command = CmdDirectory of string | CmdExecutable of string | CmdExecutableWithArguments of string list
+type command = CmdDirectory of string | CmdExecutable of string | CmdMultiPartExecutable of string list
 
 let rec parse_command directory command =
   let parts = String.split_on_char ':' command in
@@ -24,7 +24,7 @@ let rec parse_command directory command =
         if Filesystem.is_executable script_path then Ok (CmdExecutable script_path)
         else
           match Shebang.parse script_path with
-          | Ok (interpreter :: args) -> Ok (CmdExecutableWithArguments ([ interpreter ] @ args @ [ script_path ]))
+          | Ok (interpreter :: args) -> Ok (CmdMultiPartExecutable ([ interpreter ] @ args @ [ script_path ]))
           | Ok [] -> Error "Invalid shebang found"
           | Error msg -> Error msg)
     | _ -> Error (Printf.sprintf "(Sub)Command '%s' could not be found in %s" command directory)
@@ -35,14 +35,12 @@ let run_command cmd args =
       Printf.printf "Dir: %s not yet supported" dir;
       1
   | CmdExecutable executable_path -> Sys.command (Filename.quote_command executable_path args)
-  | CmdExecutableWithArguments executable_list ->
-      Sys.command (Filename.quote_command (List.hd executable_list) (List.append (List.tl executable_list) args))
+  | CmdMultiPartExecutable executable_list ->
+      Sys.command (Filename.quote_command (List.hd executable_list) (executable_list @ args))
 
 let run_cli working_directory args =
   let zebang_directory =
     match find_zebang_directory working_directory with Ok path -> path | Error msg -> failwith msg
   in
-  let command = List.hd args in
-  let command_args = List.tl args in
-  let cmd = match parse_command zebang_directory command with Ok cmd -> cmd | Error msg -> failwith msg in
-  exit (run_command cmd command_args)
+  let cmd = match parse_command zebang_directory (List.hd args) with Ok cmd -> cmd | Error msg -> failwith msg in
+  exit (run_command cmd (List.tl args))
