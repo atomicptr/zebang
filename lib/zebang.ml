@@ -7,7 +7,7 @@ let rec find_zebang_directory path =
 
 let is_runnable script_path =
   if Filesystem.is_executable script_path then true
-  else match Shebang.parse script_path with Ok _ -> true | Error _ -> false
+  else match Shebang.parse_file script_path with Ok _ -> true | Error _ -> false
 
 type command = CmdDirectory of string | CmdExecutable of string | CmdMultiPartExecutable of string list
 
@@ -23,7 +23,7 @@ let rec parse_command directory command =
     | [ script_path ] -> (
         if Filesystem.is_executable script_path then Ok (CmdExecutable script_path)
         else
-          match Shebang.parse script_path with
+          match Shebang.parse_file script_path with
           | Ok (interpreter :: args) -> Ok (CmdMultiPartExecutable ([ interpreter ] @ args @ [ script_path ]))
           | Ok [] -> Error "Invalid shebang found"
           | Error msg -> Error msg)
