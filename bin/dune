@@ -1,0 +1,4 @@
+(executable
+ (public_name zebang)
+ (name main)
+ (libraries zebang))
