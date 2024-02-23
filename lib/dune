@@ -1,2 +1,4 @@
 (library
- (name zebang))
+ (name zebang)
+ (modules zebang shebang filesystem)
+ (libraries unix))

@@ -1,0 +1,4 @@
+break-cases = fit
+margin = 120
+wrap-comments = true
+line-endings = lf
