@@ -11,6 +11,20 @@ let is_runnable script_path =
 
 type command = CmdDirectory of string | CmdExecutable of string | CmdMultiPartExecutable of string list
 
+let rec find_command_files directory =
+  Sys.readdir directory |> Array.to_list
+  |> List.map (fun filename ->
+         let path = Filename.concat directory filename in
+         if Sys.is_directory path then find_command_files path else [ path ])
+  |> List.flatten |> List.filter is_runnable
+
+let find_commands directory =
+  find_command_files directory
+  |> List.map (Filesystem.relative_to directory)
+  |> List.map Filename.remove_extension
+  |> List.map (String.split_on_char Filename.dir_sep.[0])
+  |> List.map (String.concat ":")
+
 let rec parse_command directory command =
   let parts = String.split_on_char ':' command in
   let command_head = List.hd parts in
@@ -38,9 +52,16 @@ let run_command cmd args =
   | CmdMultiPartExecutable executable_list ->
       Sys.command (Filename.quote_command (List.hd executable_list) (executable_list @ args))
 
+let print_command_list zebang_directory =
+  Printf.printf "Available commands:\n";
+  List.iter (fun filename -> Printf.printf "\t%s\n" filename) (find_commands zebang_directory)
+
 let run_cli working_directory args =
   let zebang_directory =
     match find_zebang_directory working_directory with Ok path -> path | Error msg -> failwith msg
   in
+  if List.is_empty args then (
+    print_command_list zebang_directory;
+    exit 0);
   let cmd = match parse_command zebang_directory (List.hd args) with Ok cmd -> cmd | Error msg -> failwith msg in
   exit (run_command cmd (List.tl args))
