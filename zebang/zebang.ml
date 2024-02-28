@@ -26,7 +26,9 @@ let find_commands directory =
   |> List.map (String.concat ":")
 
 let parse_script script_path =
-  if Filesystem.is_executable script_path then Ok (CmdExecutable script_path)
+  if Bool.not @@ Sys.file_exists script_path then Error (Printf.sprintf "File: %s does not exist" script_path)
+  else if Sys.is_directory script_path then Ok (CmdDirectory script_path)
+  else if Filesystem.is_executable script_path then Ok (CmdExecutable script_path)
   else
     match Shebang.parse_file script_path with
     | Ok (interpreter :: args) -> Ok (CmdMultiPartExecutable ([ interpreter ] @ args @ [ script_path ]))
