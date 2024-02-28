@@ -48,13 +48,13 @@ let rec parse_command directory command =
 let rec run_command cmd args =
   match cmd with
   | CmdDirectory dir ->
-      let files = Sys.readdir dir |> Array.to_list |> List.map (fun script_path -> Filename.concat dir script_path) in
-      let results =
-        List.map
-          (fun script_path ->
-            match parse_script script_path with Ok cmd -> Ok (run_command cmd []) | Error msg -> Error msg)
-          files
+      let files =
+        Sys.readdir dir |> Array.to_list
+        |> List.map (fun script_path -> Filename.concat dir script_path)
+        |> List.map parse_script
+        |> List.filter_map (function Ok cmd -> Some cmd | Error _ -> None)
       in
+      let results = List.map (fun cmd -> run_command cmd []) files in
       List.fold_left
         (fun acc elem ->
           match (acc, elem) with
@@ -65,16 +65,16 @@ let rec run_command cmd args =
         (Ok ()) results
   | CmdExecutable executable_path ->
       let command = Filename.quote_command executable_path args in
-      let exit_code = Sys.command command in
+      let exit_code = Command.execute "test" command in
       if exit_code == 0 then Ok () else Error (Printf.sprintf "Command: %s, exit code: %i" command exit_code)
   | CmdMultiPartExecutable executable_list ->
       let command = Filename.quote_command (List.hd executable_list) (executable_list @ args) in
-      let exit_code = Sys.command command in
+      let exit_code = Command.execute "test" command in
       if exit_code == 0 then Ok () else Error (Printf.sprintf "Command: %s, exit code: %i" command exit_code)
 
 let print_command_list zebang_directory =
   Printf.printf "Available commands:\n";
-  List.iter (fun filename -> Printf.printf "\t%s\n" filename) (find_commands zebang_directory)
+  List.iter (fun filename -> Printf.printf "\t- %s\n" filename) (find_commands zebang_directory)
 
 let run_cli working_directory args =
   let zebang_directory =
@@ -84,4 +84,45 @@ let run_cli working_directory args =
     print_command_list zebang_directory;
     exit 0);
   let cmd = match parse_command zebang_directory (List.hd args) with Ok cmd -> cmd | Error msg -> failwith msg in
-  match run_command cmd args with Ok _ -> exit 0 | Error msg -> failwith msg
+  match run_command cmd args with
+  | Ok _ -> exit 0
+  | Error msg ->
+      Printf.printf "[zebang: \"%s\"]" msg;
+      exit 1
+
+let%expect_test "find_zebang_directory: Should find the .zebang directory" =
+  let result =
+    match find_zebang_directory (Sys.getcwd ()) with
+    | Ok dir -> if Sys.file_exists dir then "IT WORKS" else ""
+    | Error msg -> msg
+  in
+  print_string result;
+  [%expect {|IT WORKS|}]
+
+let%expect_test "is_runnable: exec flag" =
+  let dir = match find_zebang_directory (Sys.getcwd ()) with Ok dir -> dir | Error msg -> failwith msg in
+  let file = List.fold_left Filename.concat dir [ "test-dir"; "should-run-exec-flag.sh" ] in
+  print_string (if is_runnable file then "IT WORKS" else "FAILS");
+  [%expect {|IT WORKS|}]
+
+let%expect_test "is_runnable: shebang" =
+  let dir = match find_zebang_directory (Sys.getcwd ()) with Ok dir -> dir | Error msg -> failwith msg in
+  let file = List.fold_left Filename.concat dir [ "test-dir"; "should-run-shebang" ] in
+  print_string (if is_runnable file then "IT WORKS" else "FAILS");
+  [%expect {|IT WORKS|}]
+
+let%expect_test "is_runnable: not runnable" =
+  let dir = match find_zebang_directory (Sys.getcwd ()) with Ok dir -> dir | Error msg -> failwith msg in
+  let file = List.fold_left Filename.concat dir [ "test-dir"; "not-runnable.sh" ] in
+  print_string (if is_runnable file then "IT WORKS" else "FAILS");
+  [%expect {|FAILS|}]
+
+let%expect_test "print_command_list: Should correctly display all options" =
+  let dir = find_zebang_directory (Sys.getcwd ()) in
+  print_command_list (match dir with Ok dir -> dir | Error msg -> failwith msg);
+  [%expect {|
+Available commands:
+	- ls
+	- test-dir:should-run-shebang
+	- test-dir:should-run-exec-flag
+	- a:b:c:test|}]

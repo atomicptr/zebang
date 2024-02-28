@@ -1,4 +1,6 @@
 (library
  (name zebang)
- (modules zebang shebang filesystem)
- (libraries unix))
+ (libraries unix)
+ (inline_tests)
+ (preprocess
+  (pps ppx_jane)))
