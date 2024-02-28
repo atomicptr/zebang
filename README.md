@@ -2,40 +2,46 @@
 
 File based script runner powered by shebangs
 
-## Usage / How does it work?
+## Installation
 
-zebang assumes you have a .zebang directory in your project root and then
-looks for a filename matching the sub command you requested.
+You currently have to download, compile and install (put it inside $HOME/.local/bin or something) yourself, I will change this down the line!
 
-For instance running
+## Usage
 
-```bash
-$ zb test
+zebang stores its scripts inside a directory named **.zebang** that should be in the root of your project.
+
+Every script file represents a sub command and can be written in any programming language as long as you can
+use shebang or executable flags (meaning binaries will work too).
+
+Assuming the following directory structure:
+
+```
+.zebang/
+    test.sh
+    lint/
+        eslint.js
+        tsc.js
+    format/
+        prettier.js
 ```
 
-will run .zebang/test.sh
+You have the following commands available:
 
-while for instance
+* zb test - runs test.sh
+* zb lint - runs everything inside the lint directory (recursively)
+* zb lint:eslint - runs lint/eslint.js
+* zb lint:tsc - runs lint/tsc.js
+* zb format - runs everything inside the format directory
+* zb format:prettier - runs prettier.js
 
-```bash
-$ zb build
-```
+## Motivation
 
-could run a script like: .zebang/build.py
+In JS projects you often define scripts inside the package.json files scripts key and then run them via: npm run SCRIPT
+this is generally something I was always kinda fond off although I often ended up writing more complex scripts that are
+stored inside a file so a general runner for an approach like this seemed sensible.
 
-You can also group several commands by putting them inside a directory
-
-```bash
-$ zb lint
-```
-
-could for instance run the scripts: .zebang/lint/eslint.js and .zebang/lint/prettier.js
-
-If you however only want to use the lint > eslint script you can do so by setting a colon:
-
-```bash
-$ zb lint:eslint
-```
+Also working with lots of other programming languages that do not have an unified way to execute scripts made me want to
+write this tool.
 
 ## Name and pronounciation
 
