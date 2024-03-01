@@ -76,7 +76,9 @@ let rec run_command cmd args =
 
 let print_command_list zebang_directory =
   Printf.printf "Available commands:\n";
-  List.iter (fun filename -> Printf.printf "\t- %s\n" filename) (find_commands zebang_directory)
+  List.iter
+    (fun filename -> Printf.printf "\t- %s\n" filename)
+    (List.sort String.compare (find_commands zebang_directory))
 
 let run_cli working_directory args =
   let zebang_directory =
@@ -124,7 +126,7 @@ let%expect_test "print_command_list: Should correctly display all options" =
   print_command_list (match dir with Ok dir -> dir | Error msg -> failwith msg);
   [%expect {|
 Available commands:
+	- a:b:c:test
 	- ls
-	- test-dir:should-run-shebang
 	- test-dir:should-run-exec-flag
-	- a:b:c:test|}]
+	- test-dir:should-run-shebang|}]

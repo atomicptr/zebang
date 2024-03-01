@@ -2,6 +2,11 @@
 
 (name zebang)
 
+(package
+ (name zebang)
+ (description "File based script runner powered by shebangs")
+ (depends ppx_jane))
+
 (generate_opam_files true)
 
 (source
