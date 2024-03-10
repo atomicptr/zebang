@@ -15,11 +15,13 @@ let is_runnable script_path =
 type command = CmdDirectory of string | CmdExecutable of string | CmdMultiPartExecutable of string list
 
 let rec find_command_files directory =
-  Sys.readdir directory |> Array.to_list
+  Sys.readdir directory
+  |> Array.to_list
   |> List.map (fun filename ->
          let path = Filename.concat directory filename in
          if Sys.is_directory path then find_command_files path else [ path ])
-  |> List.flatten |> List.filter is_runnable
+  |> List.flatten
+  |> List.filter is_runnable
 
 let find_commands directory =
   find_command_files directory
@@ -54,7 +56,8 @@ let rec run_command cmd args =
   match cmd with
   | CmdDirectory dir ->
       let files =
-        Sys.readdir dir |> Array.to_list
+        Sys.readdir dir
+        |> Array.to_list
         |> List.map (fun script_path -> Filename.concat dir script_path)
         |> List.map parse_script
         |> List.filter_map (function
